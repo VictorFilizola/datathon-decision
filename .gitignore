@@ -3,11 +3,11 @@
 
 # Large standard datasets
 # data/
-data/miscellanious
+data/miscellaneous
 
 # Python artifacts
 __pycache__/
 *.pyc
 
 # Environment files
-.env
+*.env
