@@ -1,3 +1,13 @@
+# Model Files
 # models/
+
+# Large standard datasets
 # data/
 data/miscellanious
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Environment files
+.env
