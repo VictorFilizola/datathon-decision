@@ -1,103 +1,91 @@
 import json
-import pandas as pd
 import os
+import random
 
-# --- Configuration: Define all file paths here ---
+# --- Configuration ---
+# Define paths using the recommended project structure
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
-# Input files
-PROSPECTS_INPUT_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'prospects.json')
-VAGAS_INPUT_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'vagas.json')
-APPLICANTS_INPUT_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'applicants.json')
-# Output files
-MERGED_PROSPECTS_VAGAS_OUTPUT_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'prospects_vagas_merged.json')
-FILTERED_APPLICANTS_OUTPUT_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'applicants_for_processing.json')
+PROSPECTS_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'prospects.json')
+VAGAS_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'vagas.json')
+APPLICANTS_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'applicants.json')
+OUTPUT_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'prospects_aggregated.json')
+SAMPLE_SIZE = 5000
 
-def flatten_prospects(prospects_data: dict) -> pd.DataFrame:
-    """Flattens the nested prospects.json data into a pandas DataFrame."""
-    prospects_list = []
-    for vaga_id, vaga_info in prospects_data.items():
-        for prospect in vaga_info.get("prospects", []):
-            prospect_record = {
-                "vaga_id": vaga_id,
-                "prospect_nome": prospect.get("nome"),
-                "prospect_codigo": prospect.get("codigo"),
-                "situacao_candidado": prospect.get("situacao_candidado"),
-                "data_candidatura": prospect.get("data_candidatura"),
-                "ultima_atualizacao": prospect.get("ultima_atualizacao"),
-                "comentario": prospect.get("comentario"),
-                "recrutador": prospect.get("recrutador")
-            }
-            prospects_list.append(prospect_record)
-    return pd.DataFrame(prospects_list)
-
-
-def flatten_vagas(vagas_data: dict) -> pd.DataFrame:
-    """Flattens the vagas.json data into a pandas DataFrame."""
-    vagas_list = []
-    for vaga_id, vaga_details in vagas_data.items():
-        record = {
-            "vaga_id": vaga_id,
-            **vaga_details.get("informacoes_basicas", {}),
-            **vaga_details.get("perfil_vaga", {})
-        }
-        vagas_list.append(record)
-    return pd.DataFrame(vagas_list)
-
-
-def main():
+def run_aggregation():
     """
-    A unified script to process raw data into two key files:
-    1. A merged file of prospects and vacancies.
-    2. A filtered list of applicants who are relevant for LLM processing.
+    Main function to load data, perform the aggregation, and save the result.
     """
-    print("--- Starting Unified Data Preparation Pipeline ---")
+    print("--- Starting Data Aggregation Pipeline ---")
 
-    # Ensure the output directory exists
-    os.makedirs(os.path.dirname(MERGED_PROSPECTS_VAGAS_OUTPUT_PATH), exist_ok=True)
-
-    # === Part 1: Merge Prospects and Vacancies ===
-    print("\n[Part 1] Merging prospects and vacancies...")
-    
-    with open(PROSPECTS_INPUT_PATH, 'r', encoding='utf-8') as f:
+    # --- 1. Load Data ---
+    print(f"-> Loading prospects from: {PROSPECTS_PATH}")
+    with open(PROSPECTS_PATH, 'r', encoding='utf-8') as f:
         prospects_data = json.load(f)
-    with open(VAGAS_INPUT_PATH, 'r', encoding='utf-8') as f:
+
+    print(f"-> Loading vacancies from: {VAGAS_PATH}")
+    with open(VAGAS_PATH, 'r', encoding='utf-8') as f:
         vagas_data = json.load(f)
 
-    prospects_df = flatten_prospects(prospects_data)
-    vagas_df = flatten_vagas(vagas_data)
-    
-    merged_df = pd.merge(prospects_df, vagas_df, on="vaga_id", how="left")
-    
-    print(f"-> Saving merged prospects/vacancies data to {MERGED_PROSPECTS_VAGAS_OUTPUT_PATH}")
-    merged_df.to_json(MERGED_PROSPECTS_VAGAS_OUTPUT_PATH, orient='records', indent=4, force_ascii=False)
-    print("-> Part 1 Complete.")
+    print(f"-> Loading applicants from: {APPLICANTS_PATH}")
+    with open(APPLICANTS_PATH, 'r', encoding='utf-8') as f:
+        applicants_data = json.load(f)
+    print("-> All data loaded successfully.")
 
-    # === Part 2: Filter Applicants Based on Merged Data ===
-    print("\n[Part 2] Filtering applicants for LLM processing...")
+    # --- 2. Sample Prospects ---
+    prospect_keys = list(prospects_data.keys())
+    if len(prospect_keys) < SAMPLE_SIZE:
+        print(f"Warning: Total prospects ({len(prospect_keys)}) is less than sample size ({SAMPLE_SIZE}). Using all prospects.")
+        sampled_keys = prospect_keys
+    else:
+        sampled_keys = random.sample(prospect_keys, SAMPLE_SIZE)
+    print(f"\n-> Randomly selected {len(sampled_keys)} prospects for aggregation.")
 
-    # Extract unique candidate IDs from the DataFrame we just created
-    active_candidate_ids = {str(prospect_codigo) for prospect_codigo in merged_df['prospect_codigo'].unique()}
-    print(f"-> Found {len(active_candidate_ids)} unique active candidates.")
+    # --- 3. Aggregate Data ---
+    print("-> Aggregating vacancy and applicant details...")
+    aggregated_data = []
+    processed_count = 0
+    for key in sampled_keys:
+        prospect_info = prospects_data.get(key)
+        vaga_info = vagas_data.get(key)
 
-    print(f"-> Loading all applicants from {APPLICANTS_INPUT_PATH}...")
-    with open(APPLICANTS_INPUT_PATH, 'r', encoding='utf-8') as f:
-        all_applicants_data = json.load(f)
+        # Skip if the prospect ID doesn't have a matching vacancy
+        if not prospect_info or not vaga_info:
+            continue
 
-    print("-> Filtering applicants...")
-    filtered_applicants = {
-        applicant_id: applicant_details
-        for applicant_id, applicant_details in all_applicants_data.items()
-        if applicant_id in active_candidate_ids
-    }
-    print(f"-> Found {len(filtered_applicants)} matching applicants to process.")
+        aggregated_prospect = {
+            "vaga_id": key,
+            "vaga_details": vaga_info,
+            "prospects_with_details": []
+        }
 
-    print(f"-> Saving filtered applicants to {FILTERED_APPLICANTS_OUTPUT_PATH}...")
-    with open(FILTERED_APPLICANTS_OUTPUT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(filtered_applicants, f, indent=4, ensure_ascii=False)
-    print("-> Part 2 Complete.")
+        # Iterate through each applicant for the current prospect
+        for applicant_summary in prospect_info.get("prospects", []):
+            applicant_id = applicant_summary.get("codigo")
+            # Fetch the full applicant profile
+            if applicant_id and applicant_id in applicants_data:
+                full_applicant_details = applicants_data[applicant_id]
+                # Combine the summary (like 'situacao_candidado') with the full profile
+                combined_applicant_data = {
+                    **applicant_summary,
+                    "full_profile": full_applicant_details
+                }
+                aggregated_prospect["prospects_with_details"].append(combined_applicant_data)
 
-    print("\n--- Unified Data Preparation Pipeline Finished Successfully! ---")
+        # Only add the record if it contains applicants with full profiles
+        if aggregated_prospect["prospects_with_details"]:
+            aggregated_data.append(aggregated_prospect)
+            processed_count += 1
 
+    print(f"-> Successfully aggregated {processed_count} prospects with their full data.")
+
+    # --- 4. Save Output ---
+    # Ensure the output directory exists
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    print(f"\n-> Saving aggregated file to: {OUTPUT_PATH}")
+    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        json.dump(aggregated_data, f, indent=4, ensure_ascii=False)
+
+    print("\n--- Data Aggregation Pipeline Finished Successfully! ---")
 
 if __name__ == "__main__":
-    main()
+    run_aggregation()
