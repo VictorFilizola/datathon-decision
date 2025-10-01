@@ -1,0 +1,16 @@
+# API Framework
+fastapi
+uvicorn[standard]
+
+# Frontend & Monitoring
+streamlit
+matplotlib
+
+# ML & Data Handling
+pandas
+scikit-learn==1.3.2
+joblib
+
+# Utilities & API Communication
+python-dotenv
+requests
