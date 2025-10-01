@@ -5,12 +5,10 @@ import json
 import os
 import matplotlib.pyplot as plt
 
-# --- Configuração ---
-# CORREÇÃO: Usar o nome do serviço do Docker 'backend' como hostname
-# quando executando dentro do Docker.
+# --- Settings ---
 API_BASE_URL = "http://backend:8000"
 
-# --- Lógica de Caminho ---
+# --- Path Logic ---
 try:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     TRAINING_DATA_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'training_dataset.json')
@@ -20,8 +18,7 @@ except NameError:
     TRAINING_DATA_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'training_dataset.json')
     PREDICTIONS_LOG_PATH = os.path.join(BASE_DIR, 'predictions.log')
 
-# (O restante do arquivo permanece exatamente o mesmo)
-# --- Funções do Painel de Monitoramento ---
+# --- Dashboard panel ---
 @st.cache_data
 def load_monitoring_data():
     """Carrega os dados de treinamento e os logs de predição para o painel."""
@@ -42,14 +39,14 @@ def load_monitoring_data():
         
     return training_df, predictions_df
 
-# --- Interface Principal ---
+# --- Main UI---
 st.set_page_config(layout="wide")
 
-# --- NAVEGAÇÃO NA BARRA LATERAL ---
+# --- Sidebar ---
 st.sidebar.title("Navegação")
 page = st.sidebar.selectbox("Escolha uma página:", ["Aplicação Principal", "Painel de Monitoramento"])
 
-# --- RENDERIZAÇÃO DA PÁGINA PRINCIPAL ---
+# --- Mainpage rendering ---
 if page == "Aplicação Principal":
     st.title("Interface MVP do Modelo de Recrutamento")
     st.markdown("Uma interface simples para interagir com a API de correspondência de recrutamento.")
@@ -185,7 +182,7 @@ if page == "Aplicação Principal":
         except Exception as e:
             st.error(f"Ocorreu um erro: {e}")
 
-# --- RENDERIZAÇÃO DO PAINEL DE MONITORAMENTO ---
+# --- Dashboard panel rendering ---
 elif page == "Painel de Monitoramento":
     st.title("Painel de Monitoramento de Drift do Modelo")
     

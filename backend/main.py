@@ -4,33 +4,29 @@ import joblib
 import pandas as pd
 import uvicorn
 import json
-import logging  # Importa o módulo de logging
+import logging 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 
-# --- Configuração do Logging ---
-# Cria um logger específico para as predições
+# --- Logging config ---
 prediction_logger = logging.getLogger("prediction_logger")
 prediction_logger.setLevel(logging.INFO)
-# Define um handler para salvar os logs em um arquivo
-# Usamos 'a' para modo append, para não apagar os logs anteriores
+# define 'a' as append
 handler = logging.FileHandler("predictions.log", mode='a')
-# Define o formato do log
+# Log format
 formatter = logging.Formatter('%(asctime)s - %(message)s')
 handler.setFormatter(formatter)
 prediction_logger.addHandler(handler)
 
-# --- Configuração de Caminhos e Dados ---
-# (O restante da configuração permanece o mesmo)
 # --- Project Structure Setup ---
 import sys
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(BASE_DIR)
 
-from src.ml.feature_extractor import simulated_gemini_feature_extraction
+from src.ml.feature_extractor import extract_features
 from src.ml.create_training_data import calculate_skill_match, calculate_level_match
 from src.ml.train import run_training_pipeline as trigger_training
 
@@ -76,7 +72,6 @@ def get_latest_model_path():
     return max(list_of_models, key=os.path.getctime)
 
 # --- API Routes ---
-# (As rotas /train, /models, /evaluate permanecem as mesmas)
 @app.get("/")
 def index():
     return {"message": "Recruitment Model API is running."}
@@ -119,7 +114,6 @@ def evaluate_specific_model(model_filename: str):
 @app.post("/predict/{model_filename}")
 def predict_match(model_filename: str, applicant_raw: RawApplicant):
     try:
-        # (Lógica de carregamento do modelo permanece a mesma)
         if model_filename == "latest":
             model_path = get_latest_model_path()
             if not model_path:
@@ -131,11 +125,11 @@ def predict_match(model_filename: str, applicant_raw: RawApplicant):
         
         model = joblib.load(model_path)
         
-        applicant_features = simulated_gemini_feature_extraction(applicant_raw.cv_pt, 'applicant')
+        applicant_features = extract_features(applicant_raw.cv_pt, 'applicant')
+
 
         prediction_records = []
         for vaga_id, vacancy_features in VACANCIES_ENHANCED_DATA.items():
-            # (Lógica de feature engineering permanece a mesma)
             skill_match = calculate_skill_match(applicant_features.get("technical_skills", []), vacancy_features.get("technical_skills", []))
             level_match = calculate_level_match(applicant_features.get("experience_level"), vacancy_features.get("experience_level"))
             record = {"vaga_id": vaga_id, "skill_match_score": skill_match, "level_match_score": level_match, "applicant_skills_count": len(applicant_features.get("technical_skills", [])), "vacancy_skills_count": len(vacancy_features.get("technical_skills", []))}
@@ -146,15 +140,12 @@ def predict_match(model_filename: str, applicant_raw: RawApplicant):
         probabilities = model.predict_proba(df_predict[feature_order])[:, 1]
         df_predict['match_probability'] = probabilities
         
-        # --- NOVO: Logging da Predição ---
-        # Para cada predição, salvamos as features e a probabilidade em nosso arquivo de log.
+        # Prediction log
         for record in df_predict.to_dict(orient='records'):
             prediction_logger.info(json.dumps(record))
-        # --- FIM DO LOGGING ---
 
         top_5_matches_df = df_predict.sort_values(by='match_probability', ascending=False).head(5)
         
-        # (Lógica de enriquecimento da resposta permanece a mesma)
         top_matches_enriched = []
         for match in top_5_matches_df.to_dict(orient='records'):
             vaga_id = match['vaga_id']
@@ -178,7 +169,7 @@ def predict_match(model_filename: str, applicant_raw: RawApplicant):
             "top_matches": top_matches_enriched
         }
     except Exception as e:
-        # Adiciona log de erro também
+        # Log error
         logging.error(f"Prediction failed with error: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
