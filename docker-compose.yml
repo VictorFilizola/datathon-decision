@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # This defines the backend service (your FastAPI API)
+  backend:
+    build: .
+    container_name: recruitment_api
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    restart: always
+
+  # This defines the frontend service (your Streamlit UI)
+  frontend:
+    build: .
+    container_name: recruitment_frontend
+    command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
+    volumes:
+      - .:/app
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    restart: always

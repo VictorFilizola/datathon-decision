@@ -6,7 +6,11 @@ import os
 import matplotlib.pyplot as plt
 
 # --- Configuração ---
-API_BASE_URL = "http://127.0.0.1:8000"
+# CORREÇÃO: Usar o nome do serviço do Docker 'backend' como hostname
+# quando executando dentro do Docker.
+API_BASE_URL = "http://backend:8000"
+
+# --- Lógica de Caminho ---
 try:
     BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     TRAINING_DATA_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'training_dataset.json')
@@ -16,6 +20,7 @@ except NameError:
     TRAINING_DATA_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'training_dataset.json')
     PREDICTIONS_LOG_PATH = os.path.join(BASE_DIR, 'predictions.log')
 
+# (O restante do arquivo permanece exatamente o mesmo)
 # --- Funções do Painel de Monitoramento ---
 @st.cache_data
 def load_monitoring_data():

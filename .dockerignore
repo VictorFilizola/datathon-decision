@@ -1,0 +1,23 @@
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Docker files
+Dockerfile
+.dockerignore
+
+# Ignore large data directories that are not needed inside the final container
+data/raw/
+data/processed/
+
+# Ignore notebooks and test data
+notebooks/
+data/test_data/
+
+# Ignore Python cache and local environment files
+__pycache__/
+*.pyc
+.env
+
+# Ignore local OS files (if any)
+.DS_Store
