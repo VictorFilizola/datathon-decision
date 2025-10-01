@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Este projeto é uma solução de Machine Learning de ponta a ponta desenvolvida como parte do Datathon PÓS TECH. O objetivo é otimizar o processo de recrutamento e seleção da empresa "Decision", utilizando Inteligência Artificial para realizar o "match" inteligente entre candidatos e vagas.
+Este projeto é uma solução de Machine Learning de ponta a ponta desenvolvida como parte do Datathon PÓS TECH. O objetivo é otimizar o processo de recrutamento e seleção da empresa "Decision", utilizando Inteligência Artificial para simplificar os dados e a partir de um modelo de Machine Learning customizado, realizar o "match" inteligente entre candidatos e vagas.
 
 A aplicação consiste em:
 1.  Um **pipeline de processamento de dados** que extrai características estruturadas de currículos e descrições de vagas.
@@ -11,6 +11,7 @@ A aplicação consiste em:
 4.  Uma **interface web interativa** construída com Streamlit que consome a API, permitindo que os recrutadores testem o sistema.
 5.  Um **painel de monitoramento de drift** para acompanhar a performance do modelo ao longo do tempo.
 6.  Toda a aplicação é **containerizada com Docker**, garantindo portabilidade e facilidade de implantação.
+7.  Uso de **LLM** para leitura, entendimento e simplificação dos dados. No caso, foi-se usado o Gemini.
 
 ## Stack Tecnológica
 
@@ -20,6 +21,7 @@ A aplicação consiste em:
 * **Machine Learning:** Scikit-learn, Pandas
 * **Containerização:** Docker, Docker Compose
 * **Servidor:** Uvicorn
+* **LLM:** Gemini
 
 ## Estrutura do Projeto
 
@@ -87,7 +89,7 @@ O processo de transformação dos dados brutos em um modelo preditivo é dividid
 
 1.  **Agregação de Dados (`build_dataset.py`):** Inicialmente, um script seleciona uma amostra de `prospects` e agrega as informações completas das vagas (`vagas.json`) e dos candidatos (`applicants.json`) em um único arquivo (`prospects_aggregated.json`), que serve como base para o processamento.
 
-2.  **Extração de Features (`feature_extractor.py`):** Este script simula a funcionalidade de um LLM (como o Gemini). Ele lê os textos não estruturados (CVs e descrições de vagas) e extrai informações valiosas e estruturadas, como habilidades técnicas, nível de experiência e idiomas, salvando-as nos arquivos `applicants_enhanced.json` e `vacancies_enhanced.json`.
+2.  **Extração de Features (`feature_extractor.py`):** Este script utiliza um LLM (no caso, o Gemini). Ele lê os textos não estruturados (CVs e descrições de vagas) e extrai informações valiosas e estruturadas, como habilidades técnicas, nível de experiência e idiomas, salvando-as nos arquivos `applicants_enhanced.json` e `vacancies_enhanced.json`.
 
 3.  **Criação do Dataset de Treinamento (`create_training_data.py`):** Utilizando os dados estruturados e o mapa de candidaturas, este script monta o dataset final. Ele não apenas combina os dados, mas também realiza a **engenharia de features**, criando métricas comparativas como `skill_match_score` (percentual de habilidades compatíveis) e `level_match_score` (compatibilidade de senioridade). A variável alvo `hired` é criada aqui.
 
