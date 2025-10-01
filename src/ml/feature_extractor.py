@@ -10,7 +10,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 # WARNING: Setting this to True will make real API calls, which can be slow and may incur costs.
 # It is recommended to test with a small sample size first.
-USE_REAL_LLM = True 
+USE_REAL_LLM = False 
 
 # Configure the real Gemini API client
 if USE_REAL_LLM:
